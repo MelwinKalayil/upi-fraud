@@ -22,9 +22,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from engine import ROOT, Engine, clean
+from fastapi.responses import FileResponse
+from demo import DemoHub, build_router
 from store import STATUSES, Store
 
-S = SimpleNamespace(eng=None, store=None, clients=set(), q=queue.Queue(), pump=None)
+S = SimpleNamespace(eng=None, store=None, clients=set(), q=queue.Queue(), pump=None, demo=None)
 
 
 # --------------------------------------------------------------- request bodies
@@ -114,6 +116,8 @@ async def lifespan(app):
     S.eng = await loop.run_in_executor(None, lambda: Engine(store=S.store, log=print))
     S.eng.emit = _emit
     S.eng.start_threads()
+    S.demo = DemoHub(S.eng, _emit)
+    print(f"phone/Pi address: {S.demo.public_url}   (Pi screen: {S.demo.public_url}/terminal)")
     if os.environ.get("AUTOSTART") == "1":
         S.eng.replay_control("start", speed=float(os.environ.get("SPEED", "600")))
     S.pump = asyncio.create_task(_pump())
@@ -125,10 +129,20 @@ async def lifespan(app):
 
 
 app = FastAPI(title="UPI Fraud Alert System", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
-                                                  "http://localhost:3000", "http://127.0.0.1:3000"],
-                   allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(build_router(S))
 
+_web = ROOT / "demo_web"
+
+
+@app.get("/terminal")
+def terminal_page():
+    return FileResponse(_web / "terminal.html")
+
+
+@app.get("/p/{sid}")
+def phone_page(sid: str):
+    return FileResponse(_web / "phone.html")
 
 def J(obj):
     return clean(obj)
@@ -301,4 +315,4 @@ if _dist.exists():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

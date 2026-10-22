@@ -8,3 +8,4 @@ networkx
 fastapi
 uvicorn[standard]
 matplotlib
+segno
