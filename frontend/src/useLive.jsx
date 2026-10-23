@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { api } from './api.js'
 
 const Ctx = createContext(null)
+// newest first, one entry per demo session id
+const upsertDemo = (list, s) =>
+  [s, ...list.filter((x) => x.id !== s.id)].sort((a, b) => b.created - a.created).slice(0, 50)
 export const useLive = () => useContext(Ctx)
 
 export function LiveProvider({ children }) {
@@ -14,6 +17,7 @@ export function LiveProvider({ children }) {
   const [alerts, setAlerts] = useState([])
   const [caseTick, setCaseTick] = useState(0)
   const [demoMode, setDemoMode] = useState(true)
+  const [demoSessions, setDemoSessions] = useState([])
   const buf = useRef({ txns: [], alerts: [] })
   const tick = useRef(0)
 
@@ -22,6 +26,7 @@ export function LiveProvider({ children }) {
 
   useEffect(() => {
     refreshAlerts()
+    api.demoSessions().then(setDemoSessions).catch(() => {})
     let ws
     let timer
     let closed = false
@@ -70,6 +75,12 @@ export function LiveProvider({ children }) {
           case 'replay_state':
             setReplay(data)
             break
+          case 'demo_session':
+            setDemoSessions((p) => upsertDemo(p, data))
+            break
+          case 'demo_reset':
+            setDemoSessions([])
+            break
           case 'case_update':
             setCaseTick((n) => n + 1)
             refreshAlerts()
@@ -110,6 +121,7 @@ export function LiveProvider({ children }) {
   const value = {
     connected, config, setConfig, replay, setReplay, stats, latencyHist,
     txns, alerts, refreshAlerts, caseTick, demoMode, setDemoMode,
+    demoSessions, setDemoSessions, addDemo: (s) => setDemoSessions((p) => upsertDemo(p, s)),
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

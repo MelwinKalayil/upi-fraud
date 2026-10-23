@@ -17,7 +17,7 @@ from collections import OrderedDict
 from typing import Optional
 
 RESULT_SECONDS = float(os.environ.get("RESULT_SECONDS", "10"))   # how long the Pi keeps the result on screen
-
+MULE_ACCOUNT = os.environ.get("MULE_ACCOUNT", "Z022921")          # receiver used by the "mule" scenario
 PRESETS = [
     {"id": "normal", "title": "Normal payment", "scenario": "normal_grocery", "merchant": "Fresh Mart",
      "expected": "allow",
@@ -25,8 +25,8 @@ PRESETS = [
     {"id": "risky", "title": "Risky payment (alert)", "scenario": "__warn__", "merchant": "Quick Transfer",
      "expected": "warn",
      "story": "Phone shows an alert. Continue: Pi says successful, dashboard flags it. Cancel: Pi says failed."},
-    {"id": "mule", "title": "Mule account (hold)", "scenario": "qr_swap", "merchant": "Fresh Mart",
-     "expected": "hold",
+    {"id": "mule", "title": "Mule account (hold)", "scenario": "__mule__", "merchant": "Fresh Mart",
+     "expected": "hold", "receiver": MULE_ACCOUNT,
      "story": "The shop QR was swapped to a mule account. Payment is held; dashboard shows the mule network."},
 ]
 FINAL = {"success", "failed"}
@@ -51,15 +51,20 @@ class DemoHub:
         self.current_id = None
         self.public_url = (public_url or os.environ.get("PUBLIC_URL") or f"http://{guess_lan_ip()}:8000").rstrip("/")
         self.warn_payment = None
+        self.hold_payment = None
         self.calibrate()
 
     # ------------------------------------------------------------ scenarios
     def calibrate(self):
-        """The built-in presets only cover 'allow' and 'hold'. Find a payment the model scores as 'warn'
-        (amount scan on a first-time transfer) so the 'risky' preset is repeatable."""
+        """Find the payments for the two scenarios the built-in presets do not cover, so the demo is repeatable:
+        'risky' = a payment the model scores as 'warn';  'mule' = a payment to MULE_ACCOUNT that is held."""
+        self.warn_payment = self._find_warn()
+        self.hold_payment = self._find_hold()
+
+    def _find_warn(self):
+        """Amount scan on a first-time transfer until the model says 'warn'."""
         import numpy as np
         eng = self.eng
-        self.warn_payment = None
         base = next((s["payment"] for s in eng.scenarios if s["id"] == "first_time_relative"), None)
         if base is None:
             return None
@@ -70,16 +75,37 @@ class DemoHub:
                 for k in np.geomspace(1.0, 60.0, 60):
                     p = {**base, **extra, "sender": sender, "amount": float(max(300.0, round(med * k, -1)))}
                     if eng.adhoc(p, emit=False)["action"] == "warn":
-                        self.warn_payment = p
                         self.log(f"[demo] warn scenario: {p['sender']} -> {p['receiver']} INR {p['amount']:,.0f}")
                         return p
         self.log("[demo] WARNING: no payment scores as 'warn' with the current thresholds. "
-                 "Raise the warn sensitivity on the dashboard, then POST /api/demo/calibrate.")
+                 "Raise the warn sensitivity on the dashboard, then press Recalibrate.")
         return None
+
+    def _find_hold(self):
+        """The shop-QR-swap payment, but paid to MULE_ACCOUNT. Plain payment first; if the model does not hold it,
+        add risk signals (phone call, bigger amount) until it does."""
+        eng = self.eng
+        sc = next((s for s in eng.scenarios if s["id"] == "qr_swap"), None)
+        if sc is None:
+            return None
+        base = {**sc["payment"], "receiver": MULE_ACCOUNT}
+        amt = float(base["amount"])
+        for extra in ({}, {"call_active": True}, {"amount": amt * 4}, {"call_active": True, "amount": amt * 4},
+                      {"call_active": True, "screen_share": True, "amount": amt * 8}):
+            p = {**base, **extra}
+            if eng.adhoc(p, emit=False)["action"] == "hold":
+                self.log(f"[demo] mule scenario: {p['sender']} -> {p['receiver']} INR {p['amount']:,.0f}"
+                         + (f"  (needed extra signals: {list(extra)})" if extra else ""))
+                return p
+        self.log(f"[demo] WARNING: payments to {MULE_ACCOUNT} are not held by the model. "
+                 "Check the account id exists in the data, or lower the hold threshold.")
+        return base
 
     def _payment(self, preset):
         if preset["scenario"] == "__warn__":
             return self.warn_payment
+        if preset["scenario"] == "__mule__":
+            return self.hold_payment
         sc = next((s for s in self.eng.scenarios if s["id"] == preset["scenario"]), None)
         return sc["payment"] if sc else None
 
@@ -88,11 +114,13 @@ class DemoHub:
         for p in PRESETS:
             pay = self._payment(p)
             observed = self.eng.adhoc(pay, emit=False)["action"] if pay else None
+            graph_ok = None                                     # does the Investigation page have a graph for it?
+            if pay and p["expected"] == "hold":
+                graph_ok = self.eng.neighbourhood(pay["receiver"], 1) is not None
             out.append({**p, "available": pay is not None, "observed": observed,
-                        "amount": pay["amount"] if pay else None,
+                        "amount": pay["amount"] if pay else None, "graph_ok": graph_ok,
                         "ok": observed == p["expected"]})
         return out
-
     # ------------------------------------------------------------- sessions
     def create(self, preset_id):
         preset = next((p for p in PRESETS if p["id"] == preset_id), None)

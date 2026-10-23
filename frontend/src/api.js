@@ -37,4 +37,11 @@ export const api = {
   getCase: (id) => req(`/api/cases/${id}`),
   createCase: (body) => req('/api/cases', { method: 'POST', body }),
   patchCase: (id, body) => req(`/api/cases/${id}`, { method: 'PATCH', body }),
+    // ---- demo (payment terminal + phone) ----
+  demoInfo: () => req('/api/demo/info'),
+  demoPresets: () => req('/api/demo/presets'),
+  demoCalibrate: () => req('/api/demo/calibrate', { method: 'POST' }),
+  demoStart: (preset) => req('/api/demo/sessions', { method: 'POST', body: { preset } }),
+  demoSessions: () => req('/api/demo/sessions?limit=50'),
+  demoReset: () => req('/api/demo/reset', { method: 'POST' }),
 }
