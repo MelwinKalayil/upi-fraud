@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLive } from '../useLive.jsx'
 import { inr } from '../ui.jsx'
-import { bannerTitle } from '../demoText.js'
+import { bannerTitle, voiceIcon, voiceText } from '../demoText.js'
 
 // Big, plain-language banner for the newest demo payment when something needs attention.
 export default function AttentionBanner({ onTrace }) {
@@ -26,6 +26,11 @@ export default function AttentionBanner({ onTrace }) {
           <div className="muted">
             {inr(s.amount)} → <b>{s.receiver}</b> · {s.scenario_title}
           </div>
+          {voiceText(s) && (
+            <div className="voice-line">
+              {voiceIcon(s)} {voiceText(s)}
+            </div>
+          )}
         </div>
         <button className="x" onClick={() => setDismissed(s.id)} aria-label="Dismiss">
           ×

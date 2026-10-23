@@ -70,6 +70,10 @@
   .spinner { width: 54px; height: 54px; border-radius: 50%; border: 6px solid var(--line); border-top-color: var(--brand);
              animation: spin .9s linear infinite; margin: 30px auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .langs button.mute { padding: 6px 10px; font-size: 16px; }
+  .btn.listen { background: #eef2ff; color: var(--brand); border: 1.5px solid #c7d2fe; margin: 0 0 12px; }
+  .voice-note { text-align: center; font-size: 14px; color: var(--warn); background: var(--warnbg); border-radius: 10px;
+                padding: 8px 10px; margin-bottom: 10px; }
   .pop { animation: pop .35s ease-out; } @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
 </head>
@@ -96,7 +100,15 @@
       cancelled: "Payment cancelled", blocked: "Payment blocked to keep you safe", failed: "Payment failed",
       expired: "This QR code is no longer active", invalid: "This QR code is not valid",
       closePage: "You can close this page", offline: "Cannot reach the payment server", retry: "Try again",
-      secure: "Checked for fraud before you pay"
+      secure: "Checked for fraud before you pay",
+      listen: "Listen again", voiceOn: "Voice on", voiceOff: "Voice off",
+      voiceMissing: "This phone has no voice for the chosen language, so the warning is read in English.",
+      voiceTap: "Tap \u201cListen again\u201d to hear the warning.",
+      vWarn: ["Warning.", "Unusual transaction detected. Please check before you pay."],
+      vReason: "Reason:",
+      vAdviceWarn: "If someone asked you to send this money, or is on the phone with you, press Cancel payment.",
+      vHold: ["Stop.", "We have paused this payment to protect you. The receiver looks like a suspicious account."],
+      vAdviceHold: "Please do not continue. Press Cancel payment, or verify with your code."
     },
     ta: {
       payTo: "பெறுநர்", pay: "செலுத்து",
@@ -119,7 +131,15 @@
       closePage: "இந்தப் பக்கத்தை மூடலாம்",
       offline: "பணம் செலுத்தும் சேவையை அடைய முடியவில்லை",
       retry: "மீண்டும் முயற்சிக்கவும்",
-      secure: "பணம் செலுத்தும் முன் மோசடி சரிபார்க்கப்படுகிறது"
+      secure: "பணம் செலுத்தும் முன் மோசடி சரிபார்க்கப்படுகிறது",
+      listen: "மீண்டும் கேளுங்கள்", voiceOn: "குரல் இயக்கத்தில்", voiceOff: "குரல் நிறுத்தப்பட்டது",
+      voiceMissing: "இந்தத் தொலைபேசியில் தேர்ந்தெடுத்த மொழிக்கான குரல் இல்லை, எனவே எச்சரிக்கை ஆங்கிலத்தில் வாசிக்கப்படுகிறது.",
+      voiceTap: "எச்சரிக்கையைக் கேட்க \u201cமீண்டும் கேளுங்கள்\u201d அழுத்தவும்.",
+      vWarn: ["எச்சரிக்கை.", "இந்தப் பணப் பரிவர்த்தனை வழக்கத்திற்கு மாறாகத் தெரிகிறது. பணம் செலுத்தும் முன் சரிபார்க்கவும்."],
+      vReason: "காரணம்:",
+      vAdviceWarn: "யாராவது இந்தப் பணத்தை அனுப்பச் சொன்னாலோ, தொலைபேசியில் உங்களுடன் பேசிக்கொண்டிருந்தாலோ, \u201cபணம் செலுத்துவதை ரத்து செய்\u201d பொத்தானை அழுத்தவும்.",
+      vHold: ["நிறுத்துங்கள்.", "உங்களைப் பாதுகாக்க இந்தப் பரிவர்த்தனையை நிறுத்தி வைத்துள்ளோம். பணம் பெறும் கணக்கு சந்தேகத்திற்குரியதாகத் தெரிகிறது."],
+      vAdviceHold: "தயவுசெய்து தொடர வேண்டாம். \u201cபணம் செலுத்துவதை ரத்து செய்\u201d பொத்தானை அழுத்தவும், அல்லது உங்கள் குறியீட்டால் சரிபார்க்கவும்."
     },
     hi: {
       payTo: "प्राप्तकर्ता", pay: "भुगतान करें",
@@ -139,14 +159,91 @@
       closePage: "आप यह पेज बंद कर सकते हैं",
       offline: "भुगतान सर्वर से संपर्क नहीं हो सका",
       retry: "फिर से प्रयास करें",
-      secure: "भुगतान से पहले धोखाधड़ी की जाँच"
+      secure: "भुगतान से पहले धोखाधड़ी की जाँच",
+      listen: "फिर से सुनें", voiceOn: "आवाज़ चालू", voiceOff: "आवाज़ बंद",
+      voiceMissing: "इस फ़ोन में चुनी हुई भाषा की आवाज़ नहीं है, इसलिए चेतावनी अंग्रेज़ी में पढ़ी जा रही है।",
+      voiceTap: "चेतावनी सुनने के लिए \u201cफिर से सुनें\u201d दबाएँ।",
+      vWarn: ["चेतावनी।", "यह भुगतान असामान्य लग रहा है। भुगतान करने से पहले कृपया जाँच लें।"],
+      vReason: "कारण:",
+      vAdviceWarn: "अगर किसी ने आपसे यह पैसा भेजने को कहा है, या फ़ोन पर आपसे बात कर रहा है, तो \u201cभुगतान रद्द करें\u201d बटन दबाएँ।",
+      vHold: ["रुकिए।", "आपकी सुरक्षा के लिए हमने यह भुगतान रोक दिया है। पैसे पाने वाला खाता संदिग्ध लगता है।"],
+      vAdviceHold: "कृपया आगे न बढ़ें। \u201cभुगतान रद्द करें\u201d दबाएँ, या अपने कोड से सत्यापित करें।"
     }
   };
   var LANGS = [["en", "English"], ["ta", "தமிழ்"], ["hi", "हिन्दी"]];
 
   var sid = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || "");
-  var S = { lang: "en", sess: null, busy: false, err: "", name: "", draw: null };
+    var S = { lang: "en", sess: null, busy: false, err: "", name: "", draw: null, voiceNote: "", spoken: "", reported: "" };
   try { var saved = localStorage.getItem("lang"); if (saved && T[saved]) S.lang = saved; } catch (e) {}
+
+  // ------------------------------------------------------------------ voice (Web Speech API)
+  var synth = window.speechSynthesis;
+  var VOICE_OK = !!(synth && window.SpeechSynthesisUtterance);
+  var LOCALE = { en: "en-IN", hi: "hi-IN", ta: "ta-IN" };
+  var muted = false;
+  try { muted = localStorage.getItem("mute") === "1"; } catch (e) {}
+  if (VOICE_OK) {
+    synth.getVoices();                                   // some phones only load their voice list after this call
+    if ("onvoiceschanged" in synth) synth.onvoiceschanged = function () {};
+  }
+
+  function findVoice(code) {
+    if (!VOICE_OK) return null;
+    var want = LOCALE[code].toLowerCase(), vs = synth.getVoices() || [];
+    function norm(v) { return String(v.lang || "").toLowerCase().replace("_", "-"); }
+    return vs.filter(function (v) { return norm(v) === want; })[0] ||
+           vs.filter(function (v) { return norm(v).slice(0, 2) === want.slice(0, 2); })[0] || null;
+  }
+
+  // Phones only allow speech after a tap. Called inside the Pay tap, so the warning that arrives a moment later can talk.
+  function unlockVoice() {
+    if (!VOICE_OK) return;
+    try { var u = new window.SpeechSynthesisUtterance(" "); u.volume = 0; synth.speak(u); } catch (e) {}
+  }
+
+  function stopVoice() { if (VOICE_OK) { try { synth.cancel(); } catch (e) {} } }
+
+    // Tell the dashboard what happened to the spoken warning. "played" is sent every time (replays are counted);
+  // the other states are sent once per alert.
+  function reportVoice(status, code) {
+    if (!sid || !S.sess) return;
+    if (status !== "played") {
+      var key = status + ":" + code + ":" + S.sess.id;
+      if (S.reported === key) return;
+      S.reported = key;
+    }
+    api("/api/demo/sessions/" + sid + "/voice", { status: status, lang: code, chosen: S.lang, fallback: code !== S.lang })
+      .then(null, function () {});
+  }
+
+  function speakAlert(force) {
+    if (!S.sess) return;
+    if (!VOICE_OK) { reportVoice("unavailable", "en"); return; }
+    if (muted && !force) { reportVoice("muted", S.lang); return; }
+    var code = S.lang, voice = findVoice(code);
+    S.voiceNote = "";
+    if (!voice && code !== "en") { code = "en"; voice = findVoice("en"); S.voiceNote = "voiceMissing"; }
+    if (S.name === "alert") redraw();                    // show or clear the "no voice" note
+    var s = S.sess, hold = s.action === "hold", d = T[code];
+    var parts = (hold ? d.vHold : d.vWarn).slice();
+    var r = s.reasons && s.reasons[0];
+    if (r) parts.push(d.vReason + " " + ((r.text && (r.text[code] || r.text.en)) || ""));
+    parts.push(hold ? d.vAdviceHold : d.vAdviceWarn);
+    stopVoice();
+    setTimeout(function () {                             // a short pause after cancel() keeps Chrome from dropping the first part
+      parts.forEach(function (text, i) {
+        var u = new window.SpeechSynthesisUtterance(text);
+        u.lang = LOCALE[code];
+        if (voice) u.voice = voice;
+        u.rate = 0.9;                                    // slightly slower is easier to follow
+        if (i === 0) u.onstart = function () { reportVoice("played", code); };
+        u.onerror = function (e) {
+          if (e && e.error === "not-allowed") { S.voiceNote = "voiceTap"; redraw(); reportVoice("blocked", code); }
+        };
+        synth.speak(u);
+      });
+    }, 60);
+  }
 
   var view = document.getElementById("view");
   function t(k) { return T[S.lang][k] || T.en[k] || k; }
@@ -178,9 +275,24 @@
         try { localStorage.setItem("lang", l[0]); } catch (e) {}
         drawLangs();
         if (S.draw) { view.textContent = ""; S.draw(); }
+        if (S.name === "alert") speakAlert();
       });
       box.appendChild(b);
     });
+    if (VOICE_OK) {
+      var m = h("button", "mute", muted ? "\uD83D\uDD07" : "\uD83D\uDD0A");
+      m.type = "button";
+      m.title = muted ? t("voiceOff") : t("voiceOn");
+      m.setAttribute("aria-label", m.title);
+      m.addEventListener("click", function () {
+        muted = !muted;
+        try { localStorage.setItem("mute", muted ? "1" : "0"); } catch (e) {}
+        if (muted) stopVoice();
+        drawLangs();
+        if (!muted && S.name === "alert") speakAlert();
+      });
+      box.appendChild(m);
+    }
   }
 
   // ------------------------------------------------------------------------ api
@@ -199,7 +311,11 @@
     });
   }
 
-  function go(name, draw) { S.name = name; S.draw = draw; S.err = ""; view.textContent = ""; draw(); window.scrollTo(0, 0); }
+  function go(name, draw) {
+    if (name !== "alert") stopVoice();
+    S.name = name; S.draw = draw; S.err = ""; view.textContent = ""; draw(); window.scrollTo(0, 0);
+  }
+  function redraw() { if (S.draw) { view.textContent = ""; S.draw(); } }
 
   // ------------------------------------------------------------------- screens
   function screenMessage(icon, text, sub, cls) {
@@ -246,6 +362,11 @@
     b.appendChild(h("div", "icon", hold ? "\u26D4" : "\u26A0\uFE0F"));
     b.appendChild(h("h2", "", hold ? t("holdTitle") : t("warnTitle")));
     wrap.appendChild(b);
+
+    if (VOICE_OK) {
+      wrap.appendChild(btn("listen", "\uD83D\uDD0A " + t("listen"), function () { speakAlert(true); }));
+      if (S.voiceNote) wrap.appendChild(h("p", "voice-note", t(S.voiceNote)));
+    }
 
     var c = h("div", "card");
     c.appendChild(h("div", "pay-line", inr(s.amount) + " \u2192 " + s.receiver));
@@ -304,7 +425,10 @@
     switch (s.status) {
       case "waiting_scan":      return go("confirm", drawConfirm);
       case "processing":        return go("processing", drawProcessing);
-      case "awaiting_customer": return go("alert", drawAlert);
+      case "awaiting_customer":
+        go("alert", drawAlert);
+        if (S.spoken !== s.id + ":" + s.action) { S.spoken = s.id + ":" + s.action; speakAlert(); }
+        return;
       case "success":
       case "failed":            return go("result", drawResult);
       case "expired":           return go("expired", expiredScreen());
@@ -323,6 +447,7 @@
 
   function doPay() {
     if (S.busy) return;
+    unlockVoice();
     S.busy = true;
     go("processing", drawProcessing);
     api("/api/demo/sessions/" + sid + "/pay", { lang: S.lang }).then(function (s) {

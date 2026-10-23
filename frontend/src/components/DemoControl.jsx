@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { useLive } from '../useLive.jsx'
 import { ActionBadge, Card, inr } from '../ui.jsx'
+import { LANG_NAME, voiceIcon, voiceText } from '../demoText.js'
 
 const FRIENDLY = { allow: 'No alert', warn: 'Alert', hold: 'Hold' }
 const LEVEL_BADGE = { pending: '', clear: 'ok', alert: 'warn', held: 'hold', blocked: 'bad' }
@@ -178,9 +179,16 @@ export function NowPanel({ s }) {
             <b>Pi terminal</b>
             <span>{piText(s)}</span>
           </div>
-          <div className="screen-row">
+            <div className="screen-row">
             <b>Customer phone</b>
-            <span>{phoneText(s)}</span>
+            <span>
+              {phoneText(s)}
+              {voiceText(s) && (
+                <div className="voice-line">
+                  {voiceIcon(s)} {voiceText(s)}
+                </div>
+              )}
+            </span>
           </div>
           <div className="screen-row">
             <b>Dashboard</b>
@@ -230,6 +238,7 @@ export function SessionTable({ rows }) {
             <th>Amount</th>
             <th>Model decided</th>
             <th>Customer</th>
+            <th>Voice</th>
             <th>Pi showed</th>
             <th>Dashboard status</th>
           </tr>
@@ -242,6 +251,7 @@ export function SessionTable({ rows }) {
               <td>{inr(s.amount)}</td>
               <td>{s.action ? <ActionBadge action={s.action} /> : '–'}</td>
               <td>{choiceText(s)}</td>
+                            <td>{s.voice ? `${voiceIcon(s)} ${s.voice.status === 'played' ? LANG_NAME[s.voice.lang] || s.voice.lang : s.voice.status}` : '–'}</td>
               <td>{s.status === 'success' ? '✓ success' : s.status === 'failed' ? '✕ failed' : s.status === 'expired' ? 'replaced' : '…'}</td>
               <td>
                 <span className={`badge ${LEVEL_BADGE[s.dashboard?.level] || ''}`}>{s.dashboard?.level}</span>{' '}

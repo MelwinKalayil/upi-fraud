@@ -30,6 +30,8 @@ PRESETS = [
      "story": "The shop QR was swapped to a mule account. Payment is held; dashboard shows the mule network."},
 ]
 FINAL = {"success", "failed"}
+VOICE_STATES = {"played", "muted", "blocked", "unavailable"}
+LANG_NAMES = {"en": "English", "hi": "Hindi", "ta": "Tamil"}
 
 
 def guess_lan_ip():
@@ -140,7 +142,7 @@ class DemoHub:
                  "channel": pay.get("channel", "p2p"), "payment": pay,
                  "pay_url": f"{self.public_url}/p/{sid}", "status": "waiting_scan",
                  "action": None, "txn_id": None, "alert_id": None, "risk": None, "override": None,
-                 "reasons": [], "choice": None, "outcome": None,
+                 "reasons": [], "choice": None, "outcome": None, "voice": None,
                  "dashboard": {"level": "pending", "label": "QR shown – waiting for the customer", "graph_account": None},
                  "created": time.time(), "updated": time.time(), "finished": None, "events": []}
             self.sessions[sid] = s
@@ -182,6 +184,31 @@ class DemoHub:
                     "level": "held", "label": "Payment HELD – receiver looks like a mule account",
                     "graph_account": s["receiver"]})
             return self.phone_view(s)
+
+    def voice(self, sid, status, lang="en", chosen=None, fallback=False):
+        """The phone reports what happened to the spoken warning (played / muted / blocked / unavailable)."""
+        if status not in VOICE_STATES:
+            raise ValueError("status must be one of " + ", ".join(sorted(VOICE_STATES)))
+        lang = lang if lang in LANG_NAMES else "en"
+        chosen = chosen if chosen in LANG_NAMES else lang
+        with self.lock:
+            s = self.get(sid)
+            plays = (s.get("voice") or {}).get("plays", 0) + (1 if status == "played" else 0)
+            if status == "played":
+                if fallback:
+                    text = f"Warning spoken aloud in English (no {LANG_NAMES[chosen]} voice on the phone)"
+                elif plays > 1:
+                    text = f"Customer replayed the spoken warning ({LANG_NAMES[lang]})"
+                else:
+                    text = f"Warning spoken aloud in {LANG_NAMES[lang]}"
+            else:
+                text = {"muted": "Voice is muted on the phone",
+                        "blocked": "The phone blocked the voice; the customer must tap Listen again",
+                        "unavailable": "This phone cannot speak"}[status]
+            self._event(s, text)
+            self._set(s, voice={"status": status, "lang": lang, "chosen": chosen, "fallback": bool(fallback),
+                                "plays": plays, "at": time.time()})
+            return {"ok": True}    
 
     def respond(self, sid, response):
         with self.lock:
@@ -273,6 +300,12 @@ def build_router(S):
     class RespondBody(BaseModel):
         response: str
 
+    class VoiceBody(BaseModel):
+        status: str
+        lang: Optional[str] = "en"
+        chosen: Optional[str] = None
+        fallback: Optional[bool] = False
+
     def hub():
         if S.demo is None:
             raise HTTPException(503, "demo is still starting")
@@ -324,6 +357,10 @@ def build_router(S):
     @router.post("/sessions/{sid}/respond")
     def respond(sid: str, body: RespondBody):
         return guard(hub().respond, sid, body.response)
+
+    @router.post("/sessions/{sid}/voice")
+    def voice(sid: str, body: VoiceBody):
+        return guard(hub().voice, sid, body.status, body.lang or "en", body.chosen, bool(body.fallback))
 
     @router.post("/reset")
     def reset():

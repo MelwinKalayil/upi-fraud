@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useLive } from '../useLive.jsx'
 import { Card, inr } from '../ui.jsx'
-import { LEVEL_BADGE, LEVEL_TEXT, demoTime, whatHappened } from '../demoText.js'
+import { LEVEL_BADGE, LEVEL_TEXT, demoTime, voiceIcon, voiceText, whatHappened } from '../demoText.js'
 
 // Live list of payments made from the phone, in plain words.
 export default function DemoFeed({ onTrace }) {
@@ -39,6 +39,11 @@ export default function DemoFeed({ onTrace }) {
                     <td>
                       <b>{s.scenario_title}</b>
                       <div className="muted small">{whatHappened(s)}</div>
+                      {voiceText(s) && (
+                        <div className="voice-line">
+                          {voiceIcon(s)} {voiceText(s)}
+                        </div>
+                      )}
                     </td>
                     <td>{inr(s.amount)}</td>
                     <td>

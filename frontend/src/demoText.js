@@ -44,3 +44,26 @@ export function bannerTitle(s) {
       return ''
   }
 }
+
+export const LANG_NAME = { en: 'English', hi: 'Hindi', ta: 'Tamil' }
+
+// What happened to the spoken warning on the customer's phone (null until the phone reports).
+export function voiceText(s) {
+  const v = s.voice
+  if (!v) return null
+  switch (v.status) {
+    case 'played':
+      if (v.fallback) return `Spoken aloud in English (no ${LANG_NAME[v.chosen] || 'selected-language'} voice on the phone)`
+      return `Spoken aloud in ${LANG_NAME[v.lang] || v.lang}` + (v.plays > 1 ? `, replayed ${v.plays - 1}×` : '')
+    case 'muted':
+      return 'Voice is muted on the phone'
+    case 'blocked':
+      return 'The phone blocked the voice: the customer must tap Listen again'
+    case 'unavailable':
+      return 'This phone cannot speak'
+    default:
+      return null
+  }
+}
+
+export const voiceIcon = (s) => ({ played: '🔊', muted: '🔇', blocked: '⚠️', unavailable: '⚠️' }[s.voice?.status] || '')
